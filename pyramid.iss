@@ -27,9 +27,22 @@ const
   ModPathName = 'modifypath'; 
   ModPathType = 'system';
 var
-  CreateStarterPyramidApp: Boolean;
-  StarterAppPage: TInputQueryWizardPage;
+  CreateStarterPyramidApp: Boolean; // Whether or not we need to create a starter app
+  StarterAppPage: TInputQueryWizardPage;  // Page for accepting the start app name
 
+{* A utility function to return the starter app's name *}
+function GetAppName(Default: String): string;
+begin
+  Result := StarterAppPage.Values[0];
+end;
+
+{* Check to see if we need to create a starter app *}
+function CreateStarterAppCheck(): Boolean;
+begin
+  Result := CreateStarterPyramidApp;
+end;
+
+{* Toggle the starter app name input box *}
 procedure ClickEvent(Sender : TObject);
 begin
   if StarterAppPage.Edits[0].Enabled = False then
@@ -44,6 +57,7 @@ begin
   end;
 end;
 
+{* Create the starter app name input page *}
 procedure CreateStarterAppPage;
 var
   Checkbox: TCheckBox;
@@ -63,16 +77,8 @@ begin
   StarterAppPage.Values[0] := 'MyApp';
 end;
 
-function GetAppName(Default: String): string;
-begin
-  Result := StarterAppPage.Values[0];
-end;
 
-function CreateStarterAppCheck(): Boolean;
-begin
-  Result := CreateStarterPyramidApp;
-end;
-
+{* Add to Python to our path *}
 function ModPathDir(): TArrayOfString; 
 begin
   setArrayLength(Result, 1) 
@@ -80,6 +86,7 @@ begin
 end;
 #include "modpath.iss"
 
+{* Initialize the wizard *}
 procedure InitializeWizard();
 begin
   ITD_Init();
