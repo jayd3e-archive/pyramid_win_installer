@@ -23,35 +23,84 @@ ChangesEnvironment=true
 [Code]
 #include "it_download.iss"
 
+const
+  ModPathName = 'modifypath'; 
+  ModPathType = 'system';
+var
+  CreateStarterPyramidApp: Boolean;
+  StarterAppPage: TInputQueryWizardPage;
+
+procedure ClickEvent(Sender : TObject);
+begin
+  if StarterAppPage.Edits[0].Enabled = False then
+  begin
+    CreateStarterPyramidApp := True; 
+    StarterAppPage.Edits[0].Enabled := True;
+  end
+  else
+  begin
+    CreateStarterPyramidApp := False; 
+    StarterAppPage.Edits[0].Enabled := false;
+  end;
+end;
+
+procedure CreateStarterAppPage;
+var
+  Checkbox: TCheckBox;
+begin
+  CreateStarterPyramidApp := True;
+  StarterAppPage := CreateInputQueryPage(wpSelectTasks, 'Create a Pyramid Starter App', 'Enter the name for your Pyramid starter app.', '');
+  
+  CheckBox := TNewCheckBox.Create(StarterAppPage);
+  CheckBox.Top := 5;
+  Checkbox.Width := 200;
+  CheckBox.Caption := 'Created starter app?';
+  CheckBox.Checked := True;
+  CheckBox.Parent := StarterAppPage.Surface;
+  CheckBox.OnClick := @ClickEvent;
+  
+  StarterAppPage.Add('App Name:', False);
+  StarterAppPage.Values[0] := 'MyApp';
+end;
+
+function GetAppName(Default: String): string;
+begin
+  Result := StarterAppPage.Values[0];
+end;
+
+function CreateStarterAppCheck(): Boolean;
+begin
+  Result := CreateStarterPyramidApp;
+end;
+
+function ModPathDir(): TArrayOfString; 
+begin
+  setArrayLength(Result, 1) 
+  Result[0] := ExpandConstant('C:\Python26');
+end;
+#include "modpath.iss"
+
 procedure InitializeWizard();
 begin
   ITD_Init();
   ITD_AddFile('http://www.python.org/ftp/python/2.6/python-2.6.msi', ExpandConstant('{tmp}\python-2.6.msi'));
   ITD_AddFile('http://peak.telecommunity.com/dist/ez_setup.py', ExpandConstant('{tmp}\ez_setup.py'));
   ITD_DownloadAfter(wpReady);
+  
+  CreateStarterAppPage();
 end;
-
-const 
-    ModPathName = 'modifypath'; 
-    ModPathType = 'system'; 
-function ModPathDir(): TArrayOfString; 
-begin
-    setArrayLength(Result, 1) 
-    Result[0] := ExpandConstant('C:\Python26');
-end;
-#include "modpath.iss"
 
 [Languages]
 Name: "english"; MessagesFile: "compiler:Default.isl"
 
 [Run]
-Filename: "msiexec.exe"; Parameters: "/i ""{tmp}\python-2.6.msi"" /qn"
-Filename: "C:\Python26\python.exe"; Parameters: """{tmp}\ez_setup.py"""
-Filename: "C:\Python26\Scripts\easy_install.exe"; Parameters: "virtualenv"
-Filename: "C:\Python26\Scripts\virtualenv.exe"; Parameters: "C:\Projects\MyApp\env"
-Filename: "C:\Projects\MyApp\env\Scripts\easy_install.exe"; Parameters: "pyramid"
-Filename: "C:\Projects\MyApp\env\Scripts\pcreate.exe"; Parameters: "C:\Projects\MyApp -t starter"; Flags: "postinstall"
-Filename: "C:\Projects\MyApp\env\Scripts\python.exe"; Parameters: "C:\Projects\MyApp\setup.py develop"; Flags: "postinstall"
+Filename: "msiexec.exe"; Parameters: "/i ""{tmp}\python-2.6.msi"" /qn"; StatusMsg: "Installing Python-2.6..."; Flags: "runhidden"
+Filename: "C:\Python26\python.exe"; Parameters: """{tmp}\ez_setup.py"""; StatusMsg: "Installing setuptools..."; Flags: "runhidden"
+Filename: "C:\Python26\Scripts\easy_install.exe"; Parameters: "virtualenv"; StatusMsg: "Installing virtualenv..."; Flags: "runhidden"
+Filename: "C:\Python26\Scripts\virtualenv.exe"; Parameters: "C:\Projects\{code:GetAppName}\env"; Check: CreateStarterAppCheck; StatusMsg: "Creating your virtualenv..."; Flags: "runhidden"
+Filename: "C:\Projects\{code:GetAppName}\env\Scripts\easy_install.exe"; Parameters: "pyramid"; Check: CreateStarterAppCheck; StatusMsg: "Installing Pyramid...."; Flags: "runhidden"
+Filename: "C:\Projects\{code:GetAppName}\env\Scripts\pcreate.exe"; Parameters: "C:\Projects\{code:GetAppName} -t starter"; Check: CreateStarterAppCheck; StatusMsg: "Creating a starter application..."; Flags: "runhidden"
+Filename: "C:\Projects\{code:GetAppName}\env\Scripts\python.exe"; Parameters: "C:\Projects\{code:GetAppName}\setup.py develop"; Check: CreateStarterAppCheck; StatusMsg: "Installing dependencies of starter application..."; Flags: "runhidden"
 
 [Tasks]
-Name: modifypath; Description: Add application directory to your environmental path;
+Name: modifypath; Description: Add Python26 to your environmental path;
