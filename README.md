@@ -1,4 +1,4 @@
 pyramid_win_installer
 =====================
 
-This is the innosetup window installer for Pyramid.
+This is the innosetup Windows installer for Pyramid.
