@@ -20,71 +20,11 @@ Compression=lzma
 SolidCompression=yes
 ChangesEnvironment=true
 
+[Files]
+Source: "C:\Users\VAMP\Documents\GitHub\pyramid_win_installer\launcher.msi"; DestDir: "{tmp}"
+
 [Code]
 #include "it_download.iss"
-
-const
-  ModPathName = 'modifypath'; 
-  ModPathType = 'system';
-var
-  CreateStarterPyramidApp: Boolean; // Whether or not we need to create a starter app
-  StarterAppPage: TInputQueryWizardPage;  // Page for accepting the start app name
-
-{* A utility function to return the starter app's name *}
-function GetAppName(Default: String): string;
-begin
-  Result := StarterAppPage.Values[0];
-end;
-
-{* Check to see if we need to create a starter app *}
-function CreateStarterAppCheck(): Boolean;
-begin
-  Result := CreateStarterPyramidApp;
-end;
-
-{* Toggle the starter app name input box *}
-procedure ClickEvent(Sender : TObject);
-begin
-  if StarterAppPage.Edits[0].Enabled = False then
-  begin
-    CreateStarterPyramidApp := True; 
-    StarterAppPage.Edits[0].Enabled := True;
-  end
-  else
-  begin
-    CreateStarterPyramidApp := False; 
-    StarterAppPage.Edits[0].Enabled := false;
-  end;
-end;
-
-{* Create the starter app name input page *}
-procedure CreateStarterAppPage;
-var
-  Checkbox: TCheckBox;
-begin
-  CreateStarterPyramidApp := True;
-  StarterAppPage := CreateInputQueryPage(wpSelectTasks, 'Create a Pyramid Starter App', 'Enter the name for your Pyramid starter app.', '');
-  
-  CheckBox := TNewCheckBox.Create(StarterAppPage);
-  CheckBox.Top := 5;
-  Checkbox.Width := 200;
-  CheckBox.Caption := 'Created starter app?';
-  CheckBox.Checked := True;
-  CheckBox.Parent := StarterAppPage.Surface;
-  CheckBox.OnClick := @ClickEvent;
-  
-  StarterAppPage.Add('App Name:', False);
-  StarterAppPage.Values[0] := 'MyApp';
-end;
-
-
-{* Add to Python to our path *}
-function ModPathDir(): TArrayOfString; 
-begin
-  setArrayLength(Result, 1) 
-  Result[0] := ExpandConstant('C:\Python26');
-end;
-#include "modpath.iss"
 
 {* Initialize the wizard *}
 procedure InitializeWizard();
@@ -92,9 +32,8 @@ begin
   ITD_Init();
   ITD_AddFile('http://www.python.org/ftp/python/2.6/python-2.6.msi', ExpandConstant('{tmp}\python-2.6.msi'));
   ITD_AddFile('http://peak.telecommunity.com/dist/ez_setup.py', ExpandConstant('{tmp}\ez_setup.py'));
+  ITD_AddFile('http://legroom.net/files/software/modpath.exe', ExpandConstant('{win}\modpath.exe'));
   ITD_DownloadAfter(wpReady);
-  
-  CreateStarterAppPage();
 end;
 
 [Languages]
@@ -104,10 +43,12 @@ Name: "english"; MessagesFile: "compiler:Default.isl"
 Filename: "msiexec.exe"; Parameters: "/i ""{tmp}\python-2.6.msi"" /qn"; StatusMsg: "Installing Python-2.6..."; Flags: "runhidden"
 Filename: "C:\Python26\python.exe"; Parameters: """{tmp}\ez_setup.py"""; StatusMsg: "Installing setuptools..."; Flags: "runhidden"
 Filename: "C:\Python26\Scripts\easy_install.exe"; Parameters: "virtualenv"; StatusMsg: "Installing virtualenv..."; Flags: "runhidden"
-Filename: "C:\Python26\Scripts\virtualenv.exe"; Parameters: "C:\Projects\{code:GetAppName}\env"; Check: CreateStarterAppCheck; StatusMsg: "Creating your virtualenv..."; Flags: "runhidden"
-Filename: "C:\Projects\{code:GetAppName}\env\Scripts\easy_install.exe"; Parameters: "pyramid"; Check: CreateStarterAppCheck; StatusMsg: "Installing Pyramid...."; Flags: "runhidden"
-Filename: "C:\Projects\{code:GetAppName}\env\Scripts\pcreate.exe"; Parameters: "C:\Projects\{code:GetAppName} -t starter"; Check: CreateStarterAppCheck; StatusMsg: "Creating a starter application..."; Flags: "runhidden"
-Filename: "C:\Projects\{code:GetAppName}\env\Scripts\python.exe"; Parameters: "C:\Projects\{code:GetAppName}\setup.py develop"; Check: CreateStarterAppCheck; StatusMsg: "Installing dependencies of starter application..."; Flags: "runhidden"
+Filename: "C:\Python26\Scripts\easy_install.exe"; Parameters: "virtualenvwrapper-win"; StatusMsg: "Installing virtualenvwrapper-win..."; Flags: "runhidden"
+Filename: "C:\Python26\Scripts\easy_install.exe"; Parameters: "virtualenvwrapper-powershell"; StatusMsg: "Installing virtualenvwrapper-powershell..."; Flags: "runhidden"
+Filename: "msiexec.exe"; Parameters: "/i ""{tmp}\launcher.msi"" /qn"; StatusMsg: "Installing pylauncher..."; Flags: "runhidden"
+Filename: "{win}\modpath.exe"; Parameters: "/add ""C:\Python26"""; StatusMsg: "Adding Python26 to the PATH..."; Flags: "runhidden"
+Filename: "{win}\modpath.exe"; Parameters: "/add ""C:\Python26\Scripts"""; StatusMsg: "Adding Python26\Scripts to the PATH..."; Flags: "runhidden"
 
-[Tasks]
-Name: modifypath; Description: Add Python26 to your environmental path;
+[UninstallRun]
+Filename: "{win}\modpath.exe"; Parameters: "/del ""C:\Python26"""; StatusMsg: "Removing Python26 to the PATH..."; Flags: "runhidden"
+Filename: "{win}\modpath.exe"; Parameters: "/del ""C:\Python26\Scripts"""; StatusMsg: "Removing Python26\Scripts to the PATH..."; Flags: "runhidden"
